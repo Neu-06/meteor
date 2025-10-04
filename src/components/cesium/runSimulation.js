@@ -22,7 +22,7 @@ function circlePositions(centerLat, centerLon, radiusKm, segments = 180) {
   return arr;
 }
 
-export function runSimulation(viewer, params) {
+export function runSimulation(viewer, params, selectedNeo = null) {
   if (!viewer) return;
   const { lat, lon, heading, angle, speed, diameter, density, autoZoom } = params;
 
@@ -156,10 +156,14 @@ export function runSimulation(viewer, params) {
   });
 
   // label
+  const labelText = selectedNeo
+    ? `${selectedNeo.name}\nImpacto: ${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt\nØ ${diameter.toFixed(0)}m, ${speed.toFixed(1)} km/s`
+    : `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt`;
+
   viewer.entities.add({
     position: impactPos,
     label: {
-      text: `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt`,
+      text: labelText,
       scale: 0.7,
       fillColor: Color.WHITE,
       outlineColor: Color.BLACK,

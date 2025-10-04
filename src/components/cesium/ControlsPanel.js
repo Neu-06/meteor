@@ -1,8 +1,15 @@
 'use client';
-export default function ControlsPanel({ params, setParams, onSimulate, onReset }) {
+export default function ControlsPanel({ params, setParams, onSimulate, onReset, selectedNeo }) {
   return (
     <div className="glass ui-panel">
-      <div className="title">Simulación de meteorito</div>
+      <div className="title">
+        Simulación de meteorito
+        {selectedNeo && (
+          <div className="neo-badge">
+            🌠 {selectedNeo.name}
+          </div>
+        )}
+      </div>
 
       <div className="grid2">
         <label>
@@ -56,6 +63,7 @@ export default function ControlsPanel({ params, setParams, onSimulate, onReset }
             step="0.5"
             value={params.speed}
             onChange={(e) => setParams((p) => ({ ...p, speed: Number(e.target.value) }))}
+            disabled={!!selectedNeo}
           />
           <span className="val">{params.speed.toFixed(1)}</span>
         </label>
@@ -68,6 +76,7 @@ export default function ControlsPanel({ params, setParams, onSimulate, onReset }
             step="10"
             value={params.diameter}
             onChange={(e) => setParams((p) => ({ ...p, diameter: Number(e.target.value) }))}
+            disabled={!!selectedNeo}
           />
           <span className="val">{params.diameter}</span>
         </label>
@@ -80,6 +89,7 @@ export default function ControlsPanel({ params, setParams, onSimulate, onReset }
             step="100"
             value={params.density}
             onChange={(e) => setParams((p) => ({ ...p, density: Number(e.target.value) }))}
+            disabled={!!selectedNeo}
           />
           <span className="val">{params.density}</span>
         </label>
@@ -107,7 +117,12 @@ export default function ControlsPanel({ params, setParams, onSimulate, onReset }
         <div className="dot dot-orange" /> alto
         <div className="dot dot-yellow" /> moderado
       </div>
-      <div className="tip">Tip: haz click en el mapa para fijar Lat/Lon de entrada.</div>
+      <div className="tip">
+        {selectedNeo
+          ? `Usando datos de NASA para ${selectedNeo.name}`
+          : 'Tip: haz click en el mapa para fijar Lat/Lon de entrada.'
+        }
+      </div>
     </div>
   );
 }
