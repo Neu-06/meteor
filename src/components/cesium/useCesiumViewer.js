@@ -1,5 +1,5 @@
-'use client';
-import { useEffect, useRef } from 'react';
+"use client";
+import { useEffect, useRef } from "react";
 import {
   Viewer,
   Ion,
@@ -9,9 +9,9 @@ import {
   LabelStyle,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
-} from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { toDeg } from './utils';
+} from "cesium";
+import "cesium/Build/Cesium/Widgets/widgets.css";
+import { toDeg } from "./utils";
 
 export function useCesiumViewer(params, setParams) {
   const containerRef = useRef(null);
@@ -22,8 +22,8 @@ export function useCesiumViewer(params, setParams) {
   useEffect(() => {
     // Configure Cesium base and token
     Ion.defaultAccessToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlNGFjNjZiZC04ODUyLTRkZjktYjY2ZS0xYTc2NWI0ODI4YjMiLCJpZCI6MzQ3MTcwLCJpYXQiOjE3NTk1OTEzMDd9.Hrg7qCeHEAXfkquLvpFvU1QEfIdtH2YN6FE2sa6IpIU';
-    window.CESIUM_BASE_URL = '/cesium/';
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlNGFjNjZiZC04ODUyLTRkZjktYjY2ZS0xYTc2NWI0ODI4YjMiLCJpZCI6MzQ3MTcwLCJpYXQiOjE3NTk1OTEzMDd9.Hrg7qCeHEAXfkquLvpFvU1QEfIdtH2YN6FE2sa6IpIU";
+    window.CESIUM_BASE_URL = "/cesium/";
 
     const viewer = new Viewer(containerRef.current, {
       shouldAnimate: true,
@@ -50,9 +50,9 @@ export function useCesiumViewer(params, setParams) {
 
     // Hide credits
     setTimeout(() => {
-      const credit = document.querySelector('.cesium-credit-container');
-      if (credit) credit.style.display = 'none';
-    }, 600);
+      const credit = document.querySelector(".cesium-credit-container");
+      if (credit) credit.style.display = "none";
+    }, 1000);
 
     // Initial crosshair entity
     crosshairRef.current = viewer.entities.add({
@@ -64,7 +64,7 @@ export function useCesiumViewer(params, setParams) {
         outlineWidth: 2,
       },
       label: {
-        text: 'Entrada',
+        text: "Entrada",
         scale: 0.6,
         fillColor: Color.WHITE,
         outlineColor: Color.BLACK,
@@ -114,7 +114,7 @@ export function useCesiumViewer(params, setParams) {
         outlineWidth: 2,
       },
       label: {
-        text: 'Entrada',
+        text: "Entrada",
         scale: 0.6,
         fillColor: Color.WHITE,
         outlineColor: Color.BLACK,

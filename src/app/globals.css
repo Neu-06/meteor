@@ -54,3 +54,8 @@ body {
 .tip{ font-size:11px; opacity:.8; margin-top:6px }
 @media (max-width: 480px){ .glass.ui-panel{ width:calc(100vw - 32px) } .ui-panel .grid2{ grid-template-columns:1fr } }
 
+.cesium-credit-logoContainer,
+.cesium-credit-textContainer,
+.cesium-credit-lightbox {
+  display: none !important;
+}
