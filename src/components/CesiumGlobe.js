@@ -7,7 +7,8 @@ export default function CesiumGlobe() {
   const cesiumContainer = useRef(null);
 
   useEffect(() => {
-    Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlNGFjNjZiZC04ODUyLTRkZjktYjY2ZS0xYTc2NWI0ODI4YjMiLCJpZCI6MzQ3MTcwLCJpYXQiOjE3NTk1OTEzMDd9.Hrg7qCeHEAXfkquLvpFvU1QEfIdtH2YN6FE2sa6IpIU";
+    Ion.defaultAccessToken =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlNGFjNjZiZC04ODUyLTRkZjktYjY2ZS0xYTc2NWI0ODI4YjMiLCJpZCI6MzQ3MTcwLCJpYXQiOjE3NTk1OTEzMDd9.Hrg7qCeHEAXfkquLvpFvU1QEfIdtH2YN6FE2sa6IpIU";
     window.CESIUM_BASE_URL = "/cesium/";
     let viewer;
     if (cesiumContainer.current) {
@@ -28,8 +29,8 @@ export default function CesiumGlobe() {
         creditsDisplay: false,
       });
       setTimeout(() => {
-        const credit = document.querySelector('.cesium-credit-container');
-        if (credit) credit.style.display = 'none';
+        const credit = document.querySelector(".cesium-credit-container");
+        if (credit) credit.style.display = "none";
       }, 1000);
     }
     return () => {
@@ -40,7 +41,15 @@ export default function CesiumGlobe() {
   return (
     <div
       ref={cesiumContainer}
-      style={{ width: "100vw", height: "100vh", position: "fixed", top: 0, left: 0, zIndex: 0 }}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        zIndex: 0,
+        borderRadius: "0.75rem",
+        overflow: "hidden",
+        background: "transparent",
+      }}
     />
   );
 }
