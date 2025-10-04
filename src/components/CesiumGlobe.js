@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import ControlsPanel from './cesium/ControlsPanel';
+import ImpactAnalysisPanel from './cesium/ImpactAnalysisPanel';
 import { useCesiumViewer } from './cesium/useCesiumViewer';
 import { runSimulation } from './cesium/runSimulation';
 
@@ -18,6 +19,8 @@ export default function CesiumGlobe() {
 
   const [selectedNeo, setSelectedNeo] = useState(null);
   const [isLoadingNeos, setIsLoadingNeos] = useState(false);
+  const [impactData, setImpactData] = useState(null);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
 
   const { containerRef, viewerRef, resetCrosshair } = useCesiumViewer(params, setParams);
 
@@ -34,7 +37,10 @@ export default function CesiumGlobe() {
   function onSimulate() {
     const viewer = viewerRef.current;
     if (!viewer) return;
-    runSimulation(viewer, params, selectedNeo);
+    runSimulation(viewer, params, selectedNeo, (data) => {
+      setImpactData(data);
+      setShowAnalysisPanel(true);
+    });
   }
 
   function onReset() {
@@ -44,6 +50,8 @@ export default function CesiumGlobe() {
     resetCrosshair(params.lat, params.lon);
     v.camera.flyHome(1.0);
     setSelectedNeo(null);
+    setImpactData(null);
+    setShowAnalysisPanel(false);
   }
 
   return (
@@ -58,7 +66,14 @@ export default function CesiumGlobe() {
         onSimulate={onSimulate}
         onReset={onReset}
         selectedNeo={selectedNeo}
+        onSelectNeo={handleSelectNeo}
       />
+      {showAnalysisPanel && (
+        <ImpactAnalysisPanel
+          impactData={impactData}
+          onClose={() => setShowAnalysisPanel(false)}
+        />
+      )}
     </>
   );
 }

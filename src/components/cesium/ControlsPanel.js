@@ -163,9 +163,9 @@ export default function ControlsPanel({
             </div>
 
             <div className="legend">
-              <div className="dot dot-red" /> daño severo
-              <div className="dot dot-orange" /> alto
-              <div className="dot dot-yellow" /> moderado
+              <div className="dot" style={{backgroundColor: '#8b0000'}} /> 20 psi - Destrucción total
+              <div className="dot dot-red" /> 5 psi - Daño severo
+              <div className="dot dot-orange" /> 1 psi - Rotura de ventanas
             </div>
             <div className="tip">
               {selectedNeo

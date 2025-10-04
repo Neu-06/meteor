@@ -26,7 +26,7 @@ export function forwardGeodesic(latDeg, lonDeg, bearingDeg, distanceMeters) {
   return { lat: toDeg(lat2), lon: ((toDeg(lon2) + 540) % 360) - 180 };
 }
 
-// Kinetic energy estimate and approximate blast radius (very rough model)
+// Kinetic energy estimate and blast radii based on overpressure levels
 export function energyAndRadius(diameter_m, density_kgm3, speed_kms) {
   const r = diameter_m / 2;
   const volume = (4 / 3) * Math.PI * r ** 3; // m^3
@@ -34,8 +34,29 @@ export function energyAndRadius(diameter_m, density_kgm3, speed_kms) {
   const v = speed_kms * 1000; // m/s
   const E = 0.5 * mass * v * v; // J
   const MT = E / 4.184e15; // megatons of TNT
-  const R_km = 1.8 * Math.cbrt(MT); // ~5 psi radius approximation
-  return { E_J: E, MT, R_km };
+  const KT = MT * 1000; // kilotons of TNT
+
+  // Scaling law for blast radius: R = C × Y^(1/3)
+  // where Y is yield in kilotons, C depends on overpressure
+  // Using empirical constants from nuclear blast data
+
+  const R_20psi = 0.14 * Math.pow(KT, 1/3); // Complete destruction (km)
+  const R_5psi = 0.28 * Math.pow(KT, 1/3);  // Severe structural damage (km)
+  const R_1psi = 0.56 * Math.pow(KT, 1/3);  // Window breakage (km)
+
+  // Thermal radiation radius (3rd degree burns)
+  // For airbursts: R_thermal ≈ 0.4 × Y^(1/2) km for clear day
+  const R_thermal = 0.4 * Math.sqrt(KT);
+
+  return {
+    E_J: E,
+    MT,
+    KT,
+    R_20psi,
+    R_5psi,
+    R_1psi,
+    R_thermal
+  };
 }
 
 // Soft heat disk (radial gradient) as a canvas
