@@ -9,6 +9,7 @@ import {
   LabelStyle,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
+  createDefaultImageryProviderViewModels,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { toDeg } from "./utils";
@@ -25,19 +26,30 @@ export function useCesiumViewer(params, setParams) {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlNGFjNjZiZC04ODUyLTRkZjktYjY2ZS0xYTc2NWI0ODI4YjMiLCJpZCI6MzQ3MTcwLCJpYXQiOjE3NTk1OTEzMDd9.Hrg7qCeHEAXfkquLvpFvU1QEfIdtH2YN6FE2sa6IpIU";
     window.CESIUM_BASE_URL = "/cesium/";
 
+    // Solo mostrar los providers de Cesium ion (los primeros del array default)
+    const allProviders = createDefaultImageryProviderViewModels();
+    // Filtra solo los que están antes de la sección 'Other' (los de Cesium ion)
+    // Cesium ion providers suelen estar al inicio, hasta que cambia el groupName a 'Other'
+    const cesiumIonProviders = [];
+    for (const provider of allProviders) {
+      if (provider.category && provider.category.toLowerCase().includes('other')) break;
+      cesiumIonProviders.push(provider);
+    }
+
     const viewer = new Viewer(containerRef.current, {
       shouldAnimate: true,
       timeline: false,
       animation: false,
       homeButton: false,
-      sceneModePicker: false,
-      baseLayerPicker: false,
+      sceneModePicker: true,
+      baseLayerPicker: true,
       navigationHelpButton: false,
       geocoder: false,
       infoBox: false,
       fullscreenButton: false,
       shadows: false,
       selectionIndicator: false,
+      imageryProviderViewModels: cesiumIonProviders,
     });
     viewerRef.current = viewer;
 

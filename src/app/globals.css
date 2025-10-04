@@ -26,7 +26,7 @@ body {
 }
 /* Panel glass */
 .glass.ui-panel{
-  position: fixed; z-index: 10; top: 16px; left: 16px;
+  position: fixed; z-index: 10; top: 16px; left: 16px; 
   width: 360px; padding: 14px 14px 12px;
   color: #fff; background: rgba(10,10,12,0.55);
   border: 1px solid rgba(255,255,255,0.1);
@@ -39,6 +39,7 @@ body {
 .ui-panel label{ display:flex; flex-direction:column; gap:6px; font-size:12px; opacity:.95 }
 .ui-panel input[type="number"]{
   width:100%; background:#fff; color:#111; border-radius:8px; border:none; padding:6px 8px;
+  padding-bottom: 30px;
 }
 .ui-panel input[type="range"]{ width:100% }
 .ui-panel .val{ font-size:11px; opacity:.85; align-self:flex-end }
@@ -52,7 +53,38 @@ body {
 .dot{ width:12px; height:12px; border-radius:50% }
 .dot-red{ background:#ff2d2d } .dot-orange{ background:#ff9900 } .dot-yellow{ background:#ffd54a }
 .tip{ font-size:11px; opacity:.8; margin-top:6px }
-@media (max-width: 480px){ .glass.ui-panel{ width:calc(100vw - 32px) } .ui-panel .grid2{ grid-template-columns:1fr } }
+.neo-badge{ font-size:10px; font-weight:400; background:#22c55e; color:#102; padding:3px 8px; border-radius:8px; margin-top:4px; display:inline-block }
+
+/* NEO List Panel */
+.neo-list{
+  position: relative; z-index: 10; top: 16px; padding-bottom: 10px;
+  width: 340px; max-height: calc(35vh - 32px); overflow: hidden;
+  color: #fff; background: rgba(10,10,12,0.55);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.neo-header{ display:flex; justify-content:space-between; align-items:center; padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.1) }
+.neo-title{ font-weight:700; font-size:14px }
+.btn-reload{ background:transparent; border:1px solid rgba(255,255,255,.2); color:#fff; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:14px; transition:.2s }
+.btn-reload:hover{ background:rgba(255,255,255,.1) }
+.neo-scroll{ flex:1; overflow-y:auto; max-height:500px; padding:8px }
+.neo-scroll::-webkit-scrollbar{ width:6px }
+.neo-scroll::-webkit-scrollbar-track{ background:rgba(255,255,255,.05) }
+.neo-scroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.2); border-radius:3px }
+.neo-item{ background:rgba(255,255,255,.08); padding:10px 12px; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.2s; border:2px solid transparent }
+.neo-item:hover{ background:rgba(255,255,255,.15); border-color:rgba(34,197,94,.4) }
+.neo-item.selected{ background:rgba(34,197,94,.25); border-color:#22c55e }
+.neo-name{ font-weight:600; font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px }
+.neo-hazard{ font-size:14px }
+.neo-stats{ display:flex; gap:12px; font-size:11px; opacity:.85 }
+.neo-stats span{ background:rgba(0,0,0,.3); padding:2px 8px; border-radius:6px }
+.neo-loading, .neo-error, .neo-empty{ padding:20px; text-align:center; font-size:12px; opacity:.7 }
+.neo-info{ padding:8px 14px; border-top:1px solid rgba(255,255,255,.1); font-size:11px; opacity:.7 }
+
+@media (max-width: 480px){ .glass.ui-panel{ width:calc(100vw - 32px) } .ui-panel .grid2{ grid-template-columns:1fr } .neo-list{ width:calc(100vw - 32px); right:16px; max-height:40vh } }
 
 .cesium-credit-logoContainer,
 .cesium-credit-textContainer,

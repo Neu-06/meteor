@@ -16,12 +16,25 @@ export default function CesiumGlobe() {
     autoZoom: true,
   });
 
+  const [selectedNeo, setSelectedNeo] = useState(null);
+  const [isLoadingNeos, setIsLoadingNeos] = useState(false);
+
   const { containerRef, viewerRef, resetCrosshair } = useCesiumViewer(params, setParams);
+
+  function handleSelectNeo(neo) {
+    setSelectedNeo(neo);
+    setParams((p) => ({
+      ...p,
+      diameter: neo.diameter,
+      speed: neo.speed,
+      density: neo.density,
+    }));
+  }
 
   function onSimulate() {
     const viewer = viewerRef.current;
     if (!viewer) return;
-    runSimulation(viewer, params);
+    runSimulation(viewer, params, selectedNeo);
   }
 
   function onReset() {
@@ -30,6 +43,7 @@ export default function CesiumGlobe() {
     v.entities.removeAll();
     resetCrosshair(params.lat, params.lon);
     v.camera.flyHome(1.0);
+    setSelectedNeo(null);
   }
 
   return (
@@ -38,7 +52,13 @@ export default function CesiumGlobe() {
         ref={containerRef}
         style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0 }}
       />
-      <ControlsPanel params={params} setParams={setParams} onSimulate={onSimulate} onReset={onReset} />
+      <ControlsPanel
+        params={params}
+        setParams={setParams}
+        onSimulate={onSimulate}
+        onReset={onReset}
+        selectedNeo={selectedNeo}
+      />
     </>
   );
 }
