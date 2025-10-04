@@ -58,9 +58,9 @@ export default function CesiumGlobe() {
       shouldAnimate: true,
       timeline: false, animation: false, homeButton: false,
       sceneModePicker: false, baseLayerPicker: false,
-      navigationHelpButton: false, geocoder: false, infoBox: false,
-      selectionIndicator: false, fullscreenButton: false, shadows: false
+      navigationHelpButton: false, geocoder: false, infoBox: false,fullscreenButton: false, shadows: false
     });
+      selectionIndicator: false, 
     viewerRef.current = viewer;
 
     // escena más “cinematográfica”
