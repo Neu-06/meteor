@@ -58,7 +58,7 @@ body {
 /* NEO List Panel */
 .neo-list{
   position: relative; z-index: 10; top: 16px; padding-bottom: 10px;
-  width: 340px; max-height: calc(35vh - 32px); overflow: hidden;
+  width: 340px; max-height: calc(75vh - 32px); overflow: hidden;
   color: #fff; background: rgba(10,10,12,0.55);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px; backdrop-filter: blur(10px) saturate(1.2);

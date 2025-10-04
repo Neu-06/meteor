@@ -160,17 +160,17 @@ export function runSimulation(viewer, params, selectedNeo = null) {
     ? `${selectedNeo.name}\nImpacto: ${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt\nØ ${diameter.toFixed(0)}m, ${speed.toFixed(1)} km/s`
     : `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt`;
 
-  viewer.entities.add({
-    position: impactPos,
-    label: {
-      text: labelText,
-      scale: 0.7,
-      fillColor: Color.WHITE,
-      outlineColor: Color.BLACK,
-      style: LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cartesian3(0, -28, 0),
-    },
-  });
+  // viewer.entities.add({
+  //   position: impactPos,
+  //   label: {
+  //     text: labelText,
+  //     scale: 0.7,
+  //     fillColor: Color.WHITE,
+  //     outlineColor: Color.BLACK,
+  //     style: LabelStyle.FILL_AND_OUTLINE,
+  //     pixelOffset: new Cartesian3(0, -28, 0),
+  //   },
+  // });
 
   if (autoZoom) {
     viewer.flyTo(viewer.entities, { duration: 1.2, maximumHeight: 2_000_000 });

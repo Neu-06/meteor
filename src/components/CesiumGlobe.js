@@ -1,8 +1,11 @@
 'use client';
 import { useState } from 'react';
+
 import ControlsPanel from './cesium/ControlsPanel';
 import { useCesiumViewer } from './cesium/useCesiumViewer';
 import { runSimulation } from './cesium/runSimulation';
+import ImpactInfoBox from './cesium/ImpactInfoBox';
+
 
 export default function CesiumGlobe() {
   const [params, setParams] = useState({
@@ -17,7 +20,7 @@ export default function CesiumGlobe() {
   });
 
   const [selectedNeo, setSelectedNeo] = useState(null);
-  const [isLoadingNeos, setIsLoadingNeos] = useState(false);
+  const [impactInfo, setImpactInfo] = useState(null); // {lat, lon, energyMt, diameter, speed, selectedNeo}
 
   const { containerRef, viewerRef, resetCrosshair } = useCesiumViewer(params, setParams);
 
@@ -34,6 +37,41 @@ export default function CesiumGlobe() {
   function onSimulate() {
     const viewer = viewerRef.current;
     if (!viewer) return;
+    // --- Copia de la lógica de runSimulation para obtener los datos del impacto ---
+    const { lat, lon, heading, angle, speed, diameter, density, autoZoom } = params;
+    const startAlt = 100000;
+    const v_ms = speed * 1000;
+    const angleRad = (angle * Math.PI) / 180;
+    const groundSpeed = v_ms * Math.cos(angleRad);
+    const descentRate = Math.max(1, v_ms * Math.sin(angleRad));
+    const timeToImpact = Math.ceil(startAlt / descentRate);
+    const dt = 0.5;
+    const steps = Math.min(4000, Math.ceil(timeToImpact / dt));
+    let t = 0,
+      curLat = lat,
+      curLon = lon,
+      curAlt = startAlt;
+    for (let i = 0; i <= steps; i++) {
+      const dist = groundSpeed * dt;
+      // forwardGeodesic: (lat, lon, heading, dist)
+      const moved = require('./cesium/utils').forwardGeodesic(curLat, curLon, heading, dist);
+      curLat = moved.lat;
+      curLon = moved.lon;
+      curAlt = Math.max(0, startAlt - descentRate * (t + dt));
+      t += dt;
+      if (curAlt <= 0) break;
+    }
+    const { energyAndRadius } = require('./cesium/utils');
+    const { MT } = energyAndRadius(diameter, density, speed);
+    setImpactInfo({
+      lat: curLat,
+      lon: curLon,
+      energyMt: MT,
+      diameter,
+      speed,
+      selectedNeo,
+    });
+    // --- Ejecuta la simulación visual ---
     runSimulation(viewer, params, selectedNeo);
   }
 
@@ -44,6 +82,7 @@ export default function CesiumGlobe() {
     resetCrosshair(params.lat, params.lon);
     v.camera.flyHome(1.0);
     setSelectedNeo(null);
+    setImpactInfo(null);
   }
 
   return (
@@ -59,6 +98,16 @@ export default function CesiumGlobe() {
         onReset={onReset}
         selectedNeo={selectedNeo}
       />
+      {impactInfo && (
+        <ImpactInfoBox
+          lat={impactInfo.lat}
+          lon={impactInfo.lon}
+          energyMt={impactInfo.energyMt}
+          diameter={impactInfo.diameter}
+          speed={impactInfo.speed}
+          selectedNeo={impactInfo.selectedNeo}
+        />
+      )}
     </>
   );
 }
