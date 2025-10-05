@@ -20,7 +20,10 @@ export async function analyzeImpactWithGemini(impactData) {
     KT, // kilotons
     diameter, // meters
     speed, // km/s
-    neoName
+    neoName,
+    density, // kg/m3
+    angle, // entry angle degrees
+    heading, // entry heading degrees
   } = impactData;
 
   // Calcular áreas afectadas (círculos)
@@ -29,7 +32,9 @@ export async function analyzeImpactWithGemini(impactData) {
   const area_1psi = Math.PI * R_1psi * R_1psi;
   const area_thermal = Math.PI * R_thermal * R_thermal;
 
-  const prompt = `Un asteroide de ${diameter}m impacta en ${lat.toFixed(2)}°, ${lon.toFixed(2)}° con energía de ${MT.toFixed(1)} megatones.
+  const prompt = `Devuelve el JSON lo MÁS RÁPIDO que puedas con datos muy precisos lo más acercado a la realidad posible, nada de cifras descabelladas:
+Un asteroide con un diametro de ${diameter}m impacta en ${lat.toFixed(2)}°, ${lon.toFixed(2)}° con energía de ${MT.toFixed(1)} megatones. 
+Tiene una velocidad de ${speed.toFixed(1)} km/s, densidad de ${density} kg/m3, ángulo de entrada de ${angle}° y rumbo de ${heading}°.
 
 Zona 20psi (destrucción total): ${R_20psi.toFixed(1)} km radio
 Zona 5psi (daño severo): ${R_5psi.toFixed(1)} km radio
