@@ -19,6 +19,7 @@ export function useCesiumViewer(params, setParams) {
   const viewerRef = useRef(null);
   const crosshairRef = useRef(null);
   const clickHandlerRef = useRef(null);
+  const initialParamsRef = useRef(params); // Capturar params iniciales
 
   useEffect(() => {
     // Configure Cesium base and token
@@ -50,15 +51,32 @@ export function useCesiumViewer(params, setParams) {
       shadows: false,
       selectionIndicator: false,
       imageryProviderViewModels: cesiumIonProviders,
+      // Optimizaciones de rendimiento
+      requestRenderMode: false, // Desactivar para evitar problemas de sincronización
+      maximumRenderTimeChange: Infinity, // Sin límite de tiempo de render
     });
     viewerRef.current = viewer;
 
-    // Cinematic tweaks
+    // Configuraciones visuales optimizadas
     viewer.scene.postProcessStages.fxaa.enabled = true;
     viewer.scene.globe.enableLighting = true;
     viewer.scene.skyAtmosphere.hueShift = 0.01;
     viewer.scene.skyAtmosphere.saturationShift = -0.05;
     viewer.scene.skyAtmosphere.brightnessShift = -0.1;
+    
+    // Optimizaciones de rendimiento
+    viewer.scene.globe.maximumScreenSpaceError = 2; // Reducir detalle del terreno para mejor rendimiento
+    viewer.scene.fog.enabled = true;
+    viewer.scene.fog.density = 0.0001;
+    
+    // Configurar cámara para movimientos más suaves
+    viewer.camera.percentageChanged = 0.1; // Menos sensibilidad en cambios de cámara
+    
+    // Configurar seguimiento de entidades más suave
+    viewer.camera.defaultMoveAmount = 100.0;
+    viewer.camera.defaultLookAmount = Math.PI / 60.0;
+    viewer.camera.defaultRotateAmount = Math.PI / 3600.0;
+    viewer.camera.defaultZoomAmount = 100.0;
 
     // Hide credits
     setTimeout(() => {
@@ -66,9 +84,9 @@ export function useCesiumViewer(params, setParams) {
       if (credit) credit.style.display = "none";
     }, 1000);
 
-    // Initial crosshair entity
+    // Initial crosshair entity para punto de entrada
     crosshairRef.current = viewer.entities.add({
-      position: Cartesian3.fromDegrees(params.lon, params.lat),
+      position: Cartesian3.fromDegrees(initialParamsRef.current.lon, initialParamsRef.current.lat),
       point: {
         pixelSize: 10,
         color: Color.CYAN,
@@ -85,7 +103,7 @@ export function useCesiumViewer(params, setParams) {
       },
     });
 
-    // Click-to-set Lat/Lon handler
+    // Click-to-set Lat/Lon handler restaurado - SIN movimiento de cámara
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
     handler.setInputAction((click) => {
       const cartesian = viewer.camera.pickEllipsoid(click.position);
@@ -93,30 +111,81 @@ export function useCesiumViewer(params, setParams) {
       const carto = Cartographic.fromCartesian(cartesian);
       const lat = toDeg(carto.latitude);
       const lon = toDeg(carto.longitude);
+      
+      // Actualizar parámetros SIN afectar la cámara
       setParams((p) => ({ ...p, lat, lon }));
+      
+      // Actualizar posición del crosshair SIN mover la cámara
       if (crosshairRef.current) {
         crosshairRef.current.position = Cartesian3.fromDegrees(lon, lat);
       }
+      
+      // Prevenir cualquier movimiento automático de cámara
+      // No hay flyTo, no hay setView, solo actualizar el marcador
     }, ScreenSpaceEventType.LEFT_CLICK);
     clickHandlerRef.current = handler;
 
     return () => {
       try {
-        if (handler) handler.destroy();
-      } catch {}
-      try {
-        if (viewer) viewer.destroy();
-      } catch {}
+        // Detener cualquier operación antes de limpiar
+        if (viewer && !viewer.isDestroyed()) {
+          viewer.clock.shouldAnimate = false;
+          viewer.trackedEntity = undefined;
+          
+          try {
+            viewer.camera.lookAtTransform(Matrix4.IDENTITY);
+          } catch (e) {
+            console.warn('Error reseteando camera transform en cleanup:', e);
+          }
+          
+          // Limpiar entidades antes de destruir
+          try {
+            viewer.entities.removeAll();
+          } catch (e) {
+            console.warn('Error limpiando entidades en cleanup:', e);
+          }
+        }
+        
+        if (handler && !handler.isDestroyed()) {
+          handler.destroy();
+        }
+      } catch (e) {
+        console.warn('Error limpiando handler:', e);
+      }
+      
+      // Destruir viewer con delay para evitar conflictos
+      setTimeout(() => {
+        try {
+          if (viewer && !viewer.isDestroyed()) {
+            viewer.destroy();
+          }
+        } catch (e) {
+          console.warn('Error destruyendo viewer:', e);
+        }
+      }, 100);
     };
-  }, []); // initialize once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar UNA VEZ al montar - NO recrear por cambios de parámetros
 
-  // helper to reset or move the crosshair
+  // useEffect separado para actualizar crosshair cuando parámetros cambien externamente
+  useEffect(() => {
+    if (crosshairRef.current && viewerRef.current) {
+      // Solo actualizar posición del crosshair SIN mover cámara
+      crosshairRef.current.position = Cartesian3.fromDegrees(params.lon, params.lat);
+    }
+  }, [params.lat, params.lon]);
+
+  // helper to reset or move the crosshair - SIN mover cámara
   function resetCrosshair(lat, lon) {
     const viewer = viewerRef.current;
     if (!viewer) return;
+    
+    // Remover crosshair anterior si existe
     if (crosshairRef.current) {
       viewer.entities.remove(crosshairRef.current);
     }
+    
+    // Crear nuevo crosshair SIN afectar la cámara
     crosshairRef.current = viewer.entities.add({
       position: Cartesian3.fromDegrees(lon, lat),
       point: {
@@ -134,6 +203,8 @@ export function useCesiumViewer(params, setParams) {
         pixelOffset: new Cartesian3(0, -18, 0),
       },
     });
+    
+    // NO mover la cámara - mantener la vista actual
   }
 
   return { containerRef, viewerRef, resetCrosshair };

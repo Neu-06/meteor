@@ -89,14 +89,30 @@ export default function ImpactAnalysisPanel({ impactData, onClose }) {
                   <span className="stat-label">Rotura ventanas</span>
                   <span className="stat-value">{impactData.R_1psi.toFixed(2)} km</span>
                 </div>
-                <div className="stat">
-                  <span className="stat-label">Radio térmico</span>
-                  <span className="stat-value">{impactData.R_thermal.toFixed(2)} km</span>
-                </div>
-              </div>
+            <div className="stat">
+              <span className="stat-label">Radio térmico</span>
+              <span className="stat-value">{impactData.R_thermal.toFixed(2)} km</span>
             </div>
-
-            {/* Analyze Button */}
+            {impactData.crater_diameter_km && (
+              <div className="stat">
+                <span className="stat-label">Diámetro del cráter</span>
+                <span className="stat-value">{impactData.crater_diameter_km.toFixed(2)} km</span>
+              </div>
+            )}
+            {impactData.seismic_magnitude && (
+              <div className="stat">
+                <span className="stat-label">Magnitud sísmica</span>
+                <span className="stat-value">{impactData.seismic_magnitude.toFixed(1)}</span>
+              </div>
+            )}
+            {impactData.efficiency && (
+              <div className="stat">
+                <span className="stat-label">Eficiencia de impacto</span>
+                <span className="stat-value">{(impactData.efficiency * 100).toFixed(1)}%</span>
+              </div>
+            )}
+          </div>
+        </div>            {/* Analyze Button */}
             {!analysis && !loading && (
               <button onClick={handleAnalyze} className="btn primary w-full">
                 🤖 Analizar Impacto con IA

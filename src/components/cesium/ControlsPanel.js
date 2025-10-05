@@ -18,6 +18,8 @@ export default function ControlsPanel({
 
   function handleSelectNeo(neo) {
     if (onSelectNeo) onSelectNeo(neo);
+    // Cambiar automáticamente al panel de simulación después de seleccionar un meteorito
+    setPanel('sim');
   }
 
   function handleMenu(option) {
@@ -199,7 +201,7 @@ export default function ControlsPanel({
             <div className="tip">
               {selectedNeo
                 ? `Usando datos de NASA para ${selectedNeo.name}`
-                : "Tip: haz click en el mapa para fijar Lat/Lon de entrada."}
+                : "Tip: haz clic en el mapa para fijar Lat/Lon de entrada."}
             </div>
             <button className="btn mt-2 w-full" onClick={() => setPanel(null)}>
               ← Volver al menú
