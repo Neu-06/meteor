@@ -25,10 +25,11 @@ export default function ControlsPanel({
   }
 
   return (
-    <div className="relative">
+  <div className="fixed top-0 left-0 z-40">
       {/* Botón para abrir/cerrar el panel */}
       <button
-        className="absolute top-2 left-2 z-30 bg-blue-950 dark:bg-blue-950 rounded-full p-2 shadow-lg"
+        className="top-2 left-2 z-30 bg-blue-950 dark:bg-blue-950 rounded-full p-2 shadow-lg"
+        style={{ position: "fixed", minWidth: 36, minHeight: 36 }}
         onClick={() => {
           if (!open) {
             setOpen(true);
@@ -38,7 +39,6 @@ export default function ControlsPanel({
           }
         }}
         aria-label={open ? "Cerrar panel" : "Abrir panel"}
-        style={{ minWidth: 36, minHeight: 36 }}
       >
         {open ? "✕" : "☰"}
       </button>
@@ -191,20 +191,20 @@ export default function ControlsPanel({
                 </button>
               </div>
 
-              <div className="legend">
-                <div className="dot dot-red" /> daño severo
-                <div className="dot dot-orange" /> alto
-                <div className="dot dot-yellow" /> moderado
-              </div>
-              <div className="tip">
-                {selectedNeo
-                  ? `Usando datos de NASA para ${selectedNeo.name}`
-                  : "Tip: haz click en el mapa para fijar Lat/Lon de entrada."}
-              </div>
-              <button className="btn mt-2 w-full" onClick={() => setPanel(null)}>
-                ← Volver al menú
-              </button>
+            <div className="legend">
+              <div className="dot" style={{backgroundColor: '#8b0000'}} /> 20 psi - Destrucción total
+              <div className="dot dot-red" /> 5 psi - Daño severo
+              <div className="dot dot-orange" /> 1 psi - Rotura de ventanas
             </div>
+            <div className="tip">
+              {selectedNeo
+                ? `Usando datos de NASA para ${selectedNeo.name}`
+                : "Tip: haz click en el mapa para fijar Lat/Lon de entrada."}
+            </div>
+            <button className="btn mt-2 w-full" onClick={() => setPanel(null)}>
+              ← Volver al menú
+            </button>
+          </div>
           )}
 
           {/* Panel de lista de meteoritos */}

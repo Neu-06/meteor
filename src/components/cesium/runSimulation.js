@@ -22,7 +22,7 @@ function circlePositions(centerLat, centerLon, radiusKm, segments = 180) {
   return arr;
 }
 
-export function runSimulation(viewer, params, selectedNeo = null) {
+export function runSimulation(viewer, params, selectedNeo = null, onImpactCalculated = null) {
   if (!viewer) return;
   const { lat, lon, heading, angle, speed, diameter, density, autoZoom } = params;
 
@@ -122,43 +122,46 @@ export function runSimulation(viewer, params, selectedNeo = null) {
   });
 
   // impact visuals: energy, rings, label
-  const { MT, R_km } = energyAndRadius(diameter, density, speed);
+  const { MT, KT, R_20psi, R_5psi, R_1psi, R_thermal } = energyAndRadius(diameter, density, speed);
   const impactPos = Cartesian3.fromDegrees(curLon, curLat, 10);
 
-  // heat disk
+  // thermal radiation disk (3rd degree burns)
   const heatDisk = makeHeatDisk(512, 'rgba(255,140,0,1)');
   viewer.entities.add({
     position: impactPos,
     ellipse: {
-      semiMajorAxis: R_km * 600,
-      semiMinorAxis: R_km * 600,
+      semiMajorAxis: R_thermal * 1000, // convert km to meters
+      semiMinorAxis: R_thermal * 1000,
       material: new ImageMaterialProperty({ image: heatDisk, transparent: true }),
       height: 15,
     },
   });
 
-  // damage rings
+  // damage rings based on overpressure levels
   const rings = [
-    { r: Math.max(5, R_km * 0.5), fill: '#ff2d2d', alpha: 0.28, outline: '#ff2d2d' },
-    { r: Math.max(10, R_km * 1.0), fill: '#ff9900', alpha: 0.22, outline: '#ff9900' },
-    { r: Math.max(20, R_km * 1.6), fill: '#ffd54a', alpha: 0.18, outline: '#ffd54a' },
+    { r: R_20psi, fill: '#8b0000', alpha: 0.35, outline: '#ff0000', label: '20 psi - Destrucción total' },
+    { r: R_5psi, fill: '#ff2d2d', alpha: 0.25, outline: '#ff2d2d', label: '5 psi - Daño severo' },
+    { r: R_1psi, fill: '#ff9900', alpha: 0.18, outline: '#ff9900', label: '1 psi - Rotura de ventanas' },
   ];
   rings.forEach((rg) => {
-    viewer.entities.add({
-      polygon: {
-        hierarchy: circlePositions(curLat, curLon, rg.r),
-        material: Color.fromCssColorString(rg.fill).withAlpha(rg.alpha),
-        outline: true,
-        outlineColor: Color.fromCssColorString(rg.outline).withAlpha(0.65),
-        height: 15,
-      },
-    });
+    // Only show rings with radius > 0.1 km
+    if (rg.r > 0.1) {
+      viewer.entities.add({
+        polygon: {
+          hierarchy: circlePositions(curLat, curLon, rg.r),
+          material: Color.fromCssColorString(rg.fill).withAlpha(rg.alpha),
+          outline: true,
+          outlineColor: Color.fromCssColorString(rg.outline).withAlpha(0.65),
+          height: 15,
+        },
+      });
+    }
   });
 
-  // label
+  // label with detailed impact info
   const labelText = selectedNeo
-    ? `${selectedNeo.name}\nImpacto: ${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt\nØ ${diameter.toFixed(0)}m, ${speed.toFixed(1)} km/s`
-    : `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt`;
+    ? `${selectedNeo.name}\nImpacto: ${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt (${KT.toFixed(0)} kt)\nRadio térmico: ${R_thermal.toFixed(2)} km\nRadio 5 psi: ${R_5psi.toFixed(2)} km\nØ ${diameter.toFixed(0)}m, ${speed.toFixed(1)} km/s`
+    : `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt (${KT.toFixed(0)} kt)\nRadio térmico: ${R_thermal.toFixed(2)} km\nRadio 5 psi: ${R_5psi.toFixed(2)} km`;
 
   // viewer.entities.add({
   //   position: impactPos,
@@ -176,4 +179,22 @@ export function runSimulation(viewer, params, selectedNeo = null) {
     viewer.flyTo(viewer.entities, { duration: 1.2, maximumHeight: 2_000_000 });
   }
   viewer.trackedEntity = meteor;
+
+  // Pass impact data to callback if provided
+  if (onImpactCalculated) {
+    onImpactCalculated({
+      lat: curLat,
+      lon: curLon,
+      R_20psi,
+      R_5psi,
+      R_1psi,
+      R_thermal,
+      MT,
+      KT,
+      diameter,
+      speed,
+      density,
+      neoName: selectedNeo?.name
+    });
+  }
 }
