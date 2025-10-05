@@ -1,17 +1,27 @@
 'use client';
 import {
   Cartesian3,
+  Cartographic,
   JulianDate,
   PolylineGlowMaterialProperty,
   SampledPositionProperty,
   Color,
   LabelStyle,
-  NearFarScalar,
   ImageMaterialProperty,
+  VelocityOrientationProperty,
+  LinearApproximation,   // Interpolación lineal entre samples
+  ColorBlendMode,        // Color del modelo
+  ArcType,               // Polilínea recta
+  Ellipsoid,
+  Matrix4,
+  Ray,
+  Transforms,
+  IntersectionTests,
 } from 'cesium';
+
 import { forwardGeodesic, energyAndRadius, makeHeatDisk, toRad } from './utils';
 
-// Build circle polygon positions using forward geodesic
+// Círculo geodésico para las zonas de daño
 function circlePositions(centerLat, centerLon, radiusKm, segments = 180) {
   const arr = [];
   for (let i = 0; i <= segments; i++) {
@@ -22,14 +32,20 @@ function circlePositions(centerLat, centerLon, radiusKm, segments = 180) {
   return arr;
 }
 
-export function runSimulation(viewer, params, selectedNeo = null, onImpactCalculated = null) {
+export function runSimulation(
+  viewer,
+  params,
+  selectedNeo = null,
+  onImpactCalculated = null
+) {
   if (!viewer) return;
   const { lat, lon, heading, angle, speed, diameter, density, autoZoom } = params;
 
+  // Limpia escena
   viewer.entities.removeAll();
 
-  // Re-add crosshair for visual reference
-  const crosshair = viewer.entities.add({
+  // Cruz de referencia
+  viewer.entities.add({
     position: Cartesian3.fromDegrees(lon, lat),
     point: {
       pixelSize: 10,
@@ -47,37 +63,81 @@ export function runSimulation(viewer, params, selectedNeo = null, onImpactCalcul
     },
   });
 
+  // ===== Cinemática recta en ECEF =====
   const startAlt = 100000; // 100 km
   const v_ms = speed * 1000;
   const angleRad = toRad(angle);
-  const groundSpeed = v_ms * Math.cos(angleRad);
-  const descentRate = Math.max(1, v_ms * Math.sin(angleRad));
-  const timeToImpact = Math.ceil(startAlt / descentRate);
+  const headingRad = toRad(heading);
 
+  // Dirección en ENU (East, North, Up). Pitch negativo hacia abajo
+  const cosPitch = Math.cos(-angleRad);
+  const sinPitch = Math.sin(-angleRad);
+  const dirENU = new Cartesian3(
+    Math.sin(headingRad) * cosPitch,  // East
+    Math.cos(headingRad) * cosPitch,  // North
+    sinPitch                          // Up (negativo baja)
+  );
+
+  // Marco ENU en el punto de entrada (con altitud inicial)
+  const startCart = Cartesian3.fromDegrees(lon, lat, startAlt);
+  const enuFrame = Transforms.eastNorthUpToFixedFrame(startCart);
+
+  // Dirección en ECEF normalizada
+  const dirECEF = Matrix4.multiplyByPointAsVector(enuFrame, dirENU, new Cartesian3());
+  Cartesian3.normalize(dirECEF, dirECEF);
+
+  // Rayo recto
+  const ray = new Ray(startCart, dirECEF);
+  const ellipsoid = Ellipsoid.WGS84;
+
+  // Intersección con elipsoide (suelo)
+  // IntersectionTests.rayEllipsoid devuelve distancia (en metros) o {start, stop}
+  const hit = IntersectionTests.rayEllipsoid(ray, ellipsoid) ;
+
+  let totalDistance;
+  if (hit && typeof hit === 'object' && 'start' in hit) {
+    // Tomamos el primer cruce con el elipsoide
+    totalDistance = Math.max(0, hit.start);
+  } else if (typeof hit === 'number') {
+    totalDistance = Math.max(0, hit);
+  } else {
+    // Fallback por si no intersecta (p. ej. ángulo demasiado ascendente)
+    totalDistance = 1_000_000.0; // 1000 km
+  }
+
+  const timeToImpact = totalDistance / v_ms;
+
+  // Muestreo
   const dt = 0.5;
   const steps = Math.min(4000, Math.ceil(timeToImpact / dt));
   const posProp = new SampledPositionProperty();
-  const start = JulianDate.now();
-  let t = 0,
-    curLat = lat,
-    curLon = lon,
-    curAlt = startAlt;
-  const polyPositions = [];
+  posProp.setInterpolationOptions({
+    interpolationAlgorithm: LinearApproximation,
+    interpolationDegree: 1,
+  });
 
+  const start = JulianDate.now();
+  const polyPositions = [];
   const sparkEntities = [];
 
   for (let i = 0; i <= steps; i++) {
-    const dist = groundSpeed * dt;
-    const moved = forwardGeodesic(curLat, curLon, heading, dist);
-    curLat = moved.lat;
-    curLon = moved.lon;
-    curAlt = Math.max(0, startAlt - descentRate * (t + dt));
+    const tSec = i * dt;
+    const s = Math.min(v_ms * tSec, totalDistance);
 
-    const cart = Cartesian3.fromDegrees(curLon, curLat, curAlt);
-    posProp.addSample(JulianDate.addSeconds(start, t, new JulianDate()), cart);
+    // Punto recto en la línea ECEF
+    const cart = new Cartesian3(
+      startCart.x + dirECEF.x * s,
+      startCart.y + dirECEF.y * s,
+      startCart.z + dirECEF.z * s
+    );
+
+    const carto = Cartographic.fromCartesian(cart, ellipsoid);
+    const height = carto.height;
+
+    posProp.addSample(JulianDate.addSeconds(start, tSec, new JulianDate()), cart);
     polyPositions.push(cart);
 
-    // small sparks trail
+    // Chispas decorativas
     if (i % 3 === 0) {
       const age = i / steps;
       const e = viewer.entities.add({
@@ -91,64 +151,87 @@ export function runSimulation(viewer, params, selectedNeo = null, onImpactCalcul
       setTimeout(() => viewer.entities.remove(e), 1500);
     }
 
-    t += dt;
-    if (curAlt <= 0) break;
+    if (height <= 0 || s >= totalDistance) break;
   }
 
-  // animated meteor
+  // Posición de impacto (último punto o extremo del ray)
+  const impactCart =
+    polyPositions.length > 0
+      ? polyPositions[polyPositions.length - 1]
+      : new Cartesian3(
+          startCart.x + dirECEF.x * totalDistance,
+          startCart.y + dirECEF.y * totalDistance,
+          startCart.z + dirECEF.z * totalDistance
+        );
+
+  const impactCarto = Cartographic.fromCartesian(impactCart, ellipsoid);
+  const impactLat = (impactCarto.latitude * 180) / Math.PI;
+  const impactLon = (impactCarto.longitude * 180) / Math.PI;
+
+  // ===== Modelo 3D del meteorito =====
   const meteor = viewer.entities.add({
     position: posProp,
-    point: {
-      pixelSize: 12,
-      color: Color.fromCssColorString('#ff7b00'),
-      outlineColor: Color.WHITE,
-      outlineWidth: 2,
-      translucencyByDistance: new NearFarScalar(1e2, 1.0, 1e7, 0.2),
+    orientation: new VelocityOrientationProperty(posProp),
+    model: {
+      uri: '/models/meteor_opt.glb',
+      minimumPixelSize: 32,
+      maximumScale: 200,
+      scale: 1.0,
+      runAnimations: true,
+      color: Color.fromCssColorString('#ffae42'),
+      colorBlendMode: ColorBlendMode.MIX,
+      colorBlendAmount: 0.6,
     },
+    // Estela visible y recta
     path: {
       leadTime: 0,
       trailTime: Math.min(60, timeToImpact),
       width: 3.0,
       material: new PolylineGlowMaterialProperty({
-        glowPower: 0.2,
-        color: Color.fromCssColorString('#ffd000').withAlpha(0.85),
+        glowPower: 0.25,
+        color: Color.fromCssColorString('#ffcf40').withAlpha(0.9),
       }),
     },
   });
 
-  // full polyline
+  // Línea completa (trayectoria recta)
   viewer.entities.add({
-    polyline: { positions: polyPositions, width: 2, material: Color.YELLOW.withAlpha(0.8) },
+    polyline: {
+      positions: polyPositions,
+      width: 2,
+      material: Color.ORANGE.withAlpha(0.9),
+      arcType: ArcType.NONE, // recta sin curvatura visual
+    },
   });
 
-  // impact visuals: energy, rings, label
-  const { MT, KT, R_20psi, R_5psi, R_1psi, R_thermal } = energyAndRadius(diameter, density, speed);
-  const impactPos = Cartesian3.fromDegrees(curLon, curLat, 10);
+  // ===== Visuales de impacto =====
+  const { MT, KT, R_20psi, R_5psi, R_1psi, R_thermal } =
+    energyAndRadius(diameter, density, speed);
 
-  // thermal radiation disk (3rd degree burns)
+  const impactPos = Cartesian3.fromDegrees(impactLon, impactLat, 10);
+
+  // Disco térmico
   const heatDisk = makeHeatDisk(512, 'rgba(255,140,0,1)');
   viewer.entities.add({
     position: impactPos,
     ellipse: {
-      semiMajorAxis: R_thermal * 1000, // convert km to meters
+      semiMajorAxis: R_thermal * 1000,
       semiMinorAxis: R_thermal * 1000,
       material: new ImageMaterialProperty({ image: heatDisk, transparent: true }),
       height: 15,
     },
   });
 
-  // damage rings based on overpressure levels
-  const rings = [
-    { r: R_20psi, fill: '#8b0000', alpha: 0.35, outline: '#ff0000', label: '20 psi - Destrucción total' },
-    { r: R_5psi, fill: '#ff2d2d', alpha: 0.25, outline: '#ff2d2d', label: '5 psi - Daño severo' },
-    { r: R_1psi, fill: '#ff9900', alpha: 0.18, outline: '#ff9900', label: '1 psi - Rotura de ventanas' },
-  ];
-  rings.forEach((rg) => {
-    // Only show rings with radius > 0.1 km
+  // Anillos de sobrepresión
+  [
+    { r: R_20psi, fill: '#8b0000', alpha: 0.35, outline: '#ff0000' },
+    { r: R_5psi,  fill: '#ff2d2d', alpha: 0.25, outline: '#ff2d2d' },
+    { r: R_1psi,  fill: '#ff9900', alpha: 0.18, outline: '#ff9900' },
+  ].forEach((rg) => {
     if (rg.r > 0.1) {
       viewer.entities.add({
         polygon: {
-          hierarchy: circlePositions(curLat, curLon, rg.r),
+          hierarchy: circlePositions(impactLat, impactLon, rg.r),
           material: Color.fromCssColorString(rg.fill).withAlpha(rg.alpha),
           outline: true,
           outlineColor: Color.fromCssColorString(rg.outline).withAlpha(0.65),
@@ -158,33 +241,17 @@ export function runSimulation(viewer, params, selectedNeo = null, onImpactCalcul
     }
   });
 
-  // label with detailed impact info
-  const labelText = selectedNeo
-    ? `${selectedNeo.name}\nImpacto: ${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt (${KT.toFixed(0)} kt)\nRadio térmico: ${R_thermal.toFixed(2)} km\nRadio 5 psi: ${R_5psi.toFixed(2)} km\nØ ${diameter.toFixed(0)}m, ${speed.toFixed(1)} km/s`
-    : `Impacto\n${curLat.toFixed(2)}, ${curLon.toFixed(2)}\nE≈${MT.toFixed(2)} Mt (${KT.toFixed(0)} kt)\nRadio térmico: ${R_thermal.toFixed(2)} km\nRadio 5 psi: ${R_5psi.toFixed(2)} km`;
-
-  // viewer.entities.add({
-  //   position: impactPos,
-  //   label: {
-  //     text: labelText,
-  //     scale: 0.7,
-  //     fillColor: Color.WHITE,
-  //     outlineColor: Color.BLACK,
-  //     style: LabelStyle.FILL_AND_OUTLINE,
-  //     pixelOffset: new Cartesian3(0, -28, 0),
-  //   },
-  // });
-
   if (autoZoom) {
     viewer.flyTo(viewer.entities, { duration: 1.2, maximumHeight: 2_000_000 });
   }
+
   viewer.trackedEntity = meteor;
 
-  // Pass impact data to callback if provided
+  // Callback con datos de impacto
   if (onImpactCalculated) {
     onImpactCalculated({
-      lat: curLat,
-      lon: curLon,
+      lat: impactLat,
+      lon: impactLon,
       R_20psi,
       R_5psi,
       R_1psi,
@@ -194,7 +261,7 @@ export function runSimulation(viewer, params, selectedNeo = null, onImpactCalcul
       diameter,
       speed,
       density,
-      neoName: selectedNeo?.name
+      neoName: selectedNeo?.name,
     });
   }
 }
