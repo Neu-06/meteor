@@ -279,8 +279,8 @@ export default function ImpactAnalysisPanel({ impactData, onClose }) {
                       <div className="summary-section">
                         <h4>🌋 Efectos Ambientales</h4>
                         <ul className="info-list">
-                          {analysis.environmental.craterDiameter && (
-                            <li>Diámetro del cráter: <strong>{analysis.environmental.craterDiameter}</strong></li>
+                          {analysis.environmental.craterDepth && (
+                            <li>Profundidad del cráter: <strong>{analysis.environmental.craterDepth}</strong></li>
                           )}
                           {analysis.environmental.seismicMagnitude && (
                             <li>Magnitud sísmica: <strong>{analysis.environmental.seismicMagnitude}</strong></li>
@@ -418,12 +418,12 @@ export default function ImpactAnalysisPanel({ impactData, onClose }) {
                       <div className="environmental-section">
                         <h4>🌋 Efectos Ambientales</h4>
                         <div className="env-grid-detailed">
-                          {analysis.environmental.craterDiameter && (
+                          {analysis.environmental.craterDepth && (
                             <div className="env-detail-card">
                               <span className="env-icon-lg">🕳️</span>
                               <div className="env-info">
-                                <span className="env-value-lg">{analysis.environmental.craterDiameter}</span>
-                                <span className="env-label-lg">Diámetro del Cráter</span>
+                                <span className="env-value-lg">{analysis.environmental.craterDepth}</span>
+                                <span className="env-label-lg">Profundidad del Cráter</span>
                               </div>
                             </div>
                           )}

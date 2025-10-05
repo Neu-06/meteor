@@ -46,7 +46,7 @@ Responde SOLO con este JSON:
   "affectedCountries": [{"name": "país", "percentageAffected": 1, "affectedArea": 100, "majorCitiesAffected": [{"name": "ciudad", "distance": 10, "population": 100000, "damageLevel": "severo"}]}],
   "casualties": {"estimatedDeaths": 50000, "estimatedInjured": 100000, "breakdown": {"zone_20psi": 10000, "zone_5psi": 30000, "zone_1psi": 10000, "thermal": 0}, "methodology": "densidad x área x tasa"},
   "infrastructure": {"buildingsDestroyed": 10000, "buildingsDamaged": 50000, "economicLoss": "$10 mil millones", "criticalInfrastructure": []},
-  "environmental": {"craterDiameter": "1 km", "craterDepth": "300 m", "seismicMagnitude": 6.5, "atmosphericEffects": "polvo regional", "fireball": "500 km"},
+  "environmental": {"craterDepth": "300 m", "seismicMagnitude": 6.5, "atmosphericEffects": "polvo regional", "fireball": "500 km"},
   "summary": "Resumen breve del impacto"
 }`;
 
